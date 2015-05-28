@@ -141,6 +141,7 @@ java_immutables_library(
     '//src/com/facebook/buck/cli/bootstrapper:bootstrapper',
     '//src/com/facebook/buck/event:dependencies-for-external-projects-inner',
     '//src/com/facebook/buck/event:event',
+    '//src/com/facebook/buck/step:step',
     '//test/com/facebook/buck/android:android',
     '//test/com/facebook/buck/apple:apple',
     '//test/com/facebook/buck/java:java',

@@ -201,6 +201,15 @@ android_binary(
   ],
 )
 
+android_instrumentation_test(
+  name = 'app_test',
+  apk = ':app',
+  manifest = 'AndroidManifestTest.xml',
+  deps = [
+    ':app'
+  ],
+)
+
 project_config(
   src_target = ':app',
 )
