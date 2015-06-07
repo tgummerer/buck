@@ -33,6 +33,7 @@ import com.facebook.buck.rules.TargetGraphTransformer;
 import com.facebook.buck.step.ExecutionContext;
 import com.facebook.infer.annotation.SuppressFieldNotInitialized;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -152,7 +153,7 @@ public class UninstallCommand extends AbstractCommand {
           targetDeviceOptions(),
           context,
           params.getConsole(),
-          params.getBuckEventBus(),
+          Optional.of(params.getBuckEventBus()),
           params.getBuckConfig().getRestartAdbOnFailure());
 
       // Find application package name from manifest and uninstall from matching devices.

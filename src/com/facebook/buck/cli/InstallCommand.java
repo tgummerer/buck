@@ -194,7 +194,7 @@ public class InstallCommand extends BuildCommand {
         targetDeviceOptions(),
         executionContext,
         params.getConsole(),
-        params.getBuckEventBus(),
+        Optional.of(params.getBuckEventBus()),
         params.getBuckConfig().getRestartAdbOnFailure());
 
     // Uninstall the app first, if requested.
