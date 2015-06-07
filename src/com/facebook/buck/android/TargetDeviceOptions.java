@@ -1,5 +1,5 @@
 /*
- * Copyright 2013-present Facebook, Inc.
+ * Copyright 2015-present Facebook, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may
  * not use this file except in compliance with the License. You may obtain
@@ -14,47 +14,30 @@
  * under the License.
  */
 
-package com.facebook.buck.cli;
+package com.facebook.buck.android;
 
 import com.facebook.buck.step.TargetDevice;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 
-import org.kohsuke.args4j.Option;
-
 import javax.annotation.Nullable;
 
 public class TargetDeviceOptions {
 
-  @VisibleForTesting public static final String EMULATOR_MODE_SHORT_ARG = "-e";
-  @VisibleForTesting static final String EMULATOR_MODE_LONG_ARG = "--emulator";
-  @Option(
-      name = EMULATOR_MODE_LONG_ARG,
-      aliases = {EMULATOR_MODE_SHORT_ARG},
-      usage = "Use this option to use emulators only.")
   private boolean useEmulatorsOnlyMode;
 
-  @VisibleForTesting static final String DEVICE_MODE_SHORT_ARG = "-d";
-  @VisibleForTesting static final String DEVICE_MODE_LONG_ARG = "--device";
-  @Option(
-      name = DEVICE_MODE_LONG_ARG,
-      aliases = {DEVICE_MODE_SHORT_ARG},
-      usage = "Use this option to use real devices only."
-  )
   private boolean useRealDevicesOnlyMode;
 
-  @VisibleForTesting static final String SERIAL_NUMBER_SHORT_ARG = "-s";
-  @VisibleForTesting static final String SERIAL_NUMBER_LONG_ARG = "--serial";
-  @Option(
-      name = SERIAL_NUMBER_LONG_ARG,
-      aliases = {SERIAL_NUMBER_SHORT_ARG},
-      metaVar = "<serial-number>",
-      usage = "Use device or emulator with specific serial number."
-  )
   @Nullable
   private String serialNumber;
 
-  public TargetDeviceOptions() {
+  public TargetDeviceOptions(
+      boolean useEmulatorsOnlyMode,
+      boolean useRealDevicesOnlyMode,
+      String serialNumber) {
+    this.useEmulatorsOnlyMode = useEmulatorsOnlyMode;
+    this.useRealDevicesOnlyMode = useRealDevicesOnlyMode;
+    this.serialNumber = serialNumber;
   }
 
   @VisibleForTesting
