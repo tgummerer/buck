@@ -32,6 +32,7 @@ import com.facebook.buck.step.ExecutionContext;
 import com.facebook.buck.step.TestExecutionContext;
 import com.facebook.buck.testutil.TestConsole;
 import com.facebook.buck.util.Console;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Before;
@@ -103,7 +104,7 @@ public class AdbHelperTest {
         targetDeviceOptions,
         executionContext,
         console,
-        eventBus,
+        Optional.of(eventBus),
         true) {
       @Override
       protected boolean isDeviceTempWritable(IDevice device, String name) {
