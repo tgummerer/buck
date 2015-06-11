@@ -23,6 +23,10 @@ public class AdbOptions {
   private int adbThreadCount;
   private boolean multiInstallMode;
 
+  public AdbOptions() {
+    this(0, true);
+  }
+
   public AdbOptions(
       int adbThreadCount,
       boolean multiInstallMode) {

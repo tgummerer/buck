@@ -31,6 +31,10 @@ public class TargetDeviceOptions {
   @Nullable
   private String serialNumber;
 
+  public TargetDeviceOptions() {
+    this(false, false, null);
+  }
+
   public TargetDeviceOptions(
       boolean useEmulatorsOnlyMode,
       boolean useRealDevicesOnlyMode,
