@@ -238,6 +238,28 @@ public class AdbHelper {
     return isAdbInitialized(adb) ? adb : null;
   }
 
+  public List<IDevice> getDevices() throws InterruptedException {
+    List<IDevice> devices;
+
+    // Initialize adb connection.
+    AndroidDebugBridge adb = createAdb(context);
+    if (adb == null) {
+      console.printBuildFailure("Failed to create adb connection.");
+      return null;
+    }
+
+    // Build list of matching devices.
+    devices = filterDevices(adb.getDevices());
+    if (devices == null) {
+      if (restartAdbOnFailure) {
+        console.printErrorText("No devices found with adb, restarting adb-server.");
+        adb.restart();
+        devices = filterDevices(adb.getDevices());
+      }
+    }
+    return devices;
+  }
+
   /**
    * Execute an {@link AdbCallable} for all matching devices. This functions performs device
    * filtering based on three possible arguments:
@@ -253,28 +275,20 @@ public class AdbHelper {
   @SuppressWarnings("PMD.EmptyCatchBlock")
   public boolean adbCall(AdbCallable adbCallable) throws InterruptedException {
     List<IDevice> devices;
+    TraceEventLogger eventLogger = null;
 
-    try (TraceEventLogger ignored = TraceEventLogger.start(buckEventBus.get(), "set_up_adb_call")) {
+    if (buckEventBus.isPresent()) {
+      eventLogger = TraceEventLogger.start(buckEventBus.orNull(), "set_up_adb_call");
+    }
 
-      // Initialize adb connection.
-      AndroidDebugBridge adb = createAdb(context);
-      if (adb == null) {
-        console.printBuildFailure("Failed to create adb connection.");
+    try {
+      devices = getDevices();
+      if (devices == null) {
         return false;
       }
-
-      // Build list of matching devices.
-      devices = filterDevices(adb.getDevices());
-      if (devices == null) {
-        if (restartAdbOnFailure) {
-          console.printErrorText("No devices found with adb, restarting adb-server.");
-          adb.restart();
-          devices = filterDevices(adb.getDevices());
-        }
-
-        if (devices == null) {
-            return false;
-        }
+    } finally {
+      if (eventLogger != null) {
+        eventLogger.close();
       }
     }
 
