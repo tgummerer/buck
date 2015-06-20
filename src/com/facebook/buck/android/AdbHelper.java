@@ -95,7 +95,7 @@ public class AdbHelper {
   private final AdbOptions options;
   private final TargetDeviceOptions deviceOptions;
   private final ExecutionContext context;
-  private final Console console;
+  private final Optional<Console> console;
   private final Optional<BuckEventBus> buckEventBus;
   private final boolean restartAdbOnFailure;
 
@@ -103,7 +103,7 @@ public class AdbHelper {
       AdbOptions adbOptions,
       TargetDeviceOptions deviceOptions,
       ExecutionContext context,
-      Console console,
+      Optional<Console> console,
       Optional<BuckEventBus> buckEventBus,
       boolean restartAdbOnFailure) {
     this.options = adbOptions;
@@ -128,7 +128,9 @@ public class AdbHelper {
   @VisibleForTesting
   List<IDevice> filterDevices(IDevice[] allDevices) {
     if (allDevices.length == 0) {
-      console.printBuildFailure("No devices are found.");
+      if (console.isPresent()) {
+        console.get().printBuildFailure("No devices are found.");
+      }
       return null;
     }
 
@@ -175,29 +177,35 @@ public class AdbHelper {
 
     // Filtered out all devices.
     if (onlineDevices == 0) {
-      console.printBuildFailure("No devices are found.");
+      if (console.isPresent()) {
+        console.get().printBuildFailure("No devices are found.");
+      }
       return null;
     }
 
     if (devices.isEmpty()) {
-      console.printBuildFailure(String.format(
-          "Found %d connected device(s), but none of them matches specified filter.",
-          onlineDevices));
+      if (console.isPresent()) {
+        console.get().printBuildFailure(String.format(
+            "Found %d connected device(s), but none of them matches specified filter.",
+            onlineDevices));
+      }
       return null;
     }
 
     // Found multiple devices but multi-install mode is not enabled.
     if (!options.isMultiInstallModeEnabled() && devices.size() > 1) {
-      console.printBuildFailure(
-          String.format("%d device(s) matches specified device filter (1 expected).\n" +
-                        "Either disconnect other devices or enable multi-install mode (%s).",
-                         devices.size(), AdbOptions.MULTI_INSTALL_MODE_SHORT_ARG));
+      if (console.isPresent()) {
+        console.get().printBuildFailure(
+            String.format("%d device(s) matches specified device filter (1 expected).\n" +
+                          "Either disconnect other devices or enable multi-install mode (%s).",
+                           devices.size(), AdbOptions.MULTI_INSTALL_MODE_SHORT_ARG));
+      }
       return null;
     }
 
     // Report if multiple devices are matching the filter.
-    if (devices.size() > 1) {
-      console.getStdOut().printf("Found " + devices.size() + " matching devices.\n");
+    if (devices.size() > 1 && console.isPresent()) {
+      console.get().getStdOut().printf("Found " + devices.size() + " matching devices.\n");
     }
     return devices;
   }
@@ -222,7 +230,10 @@ public class AdbHelper {
     AndroidDebugBridge adb =
         AndroidDebugBridge.createBridge(context.getPathToAdbExecutable(), false);
     if (adb == null) {
-      console.printBuildFailure("Failed to connect to adb. Make sure adb server is running.");
+      if (console.isPresent()) {
+        console.get().printBuildFailure(
+            "Failed to connect to adb. Make sure adb server is running.");
+      }
       return null;
     }
 
@@ -242,14 +253,18 @@ public class AdbHelper {
     // Initialize adb connection.
     AndroidDebugBridge adb = createAdb(context);
     if (adb == null) {
-      console.printBuildFailure("Failed to create adb connection.");
+      if (console.isPresent()) {
+        console.get().printBuildFailure("Failed to create adb connection.");
+      }
       return null;
     }
 
     // Build list of matching devices.
     List<IDevice> devices = filterDevices(adb.getDevices());
     if (devices == null && restartAdbOnFailure) {
-      console.printErrorText("No devices found with adb, restarting adb-server.");
+      if (console.isPresent()) {
+        console.get().printErrorText("No devices found with adb, restarting adb-server.");
+      }
       adb.restart();
       devices = filterDevices(adb.getDevices());
     }
@@ -276,7 +291,7 @@ public class AdbHelper {
 
     try {
       if (buckEventBus.isPresent()) {
-        eventLogger = TraceEventLogger.start(buckEventBus.orNull(), "set_up_adb_call");
+        eventLogger = TraceEventLogger.start(buckEventBus.get(), "set_up_adb_call");
       }
       devices = getDevices();
       if (devices == null) {
@@ -310,8 +325,10 @@ public class AdbHelper {
     try {
       results = Futures.allAsList(futures).get();
     } catch (ExecutionException ex) {
-      console.printBuildFailure("Failed: " + adbCallable);
-      ex.printStackTrace(console.getStdErr());
+      if (console.isPresent()) {
+        console.get().printBuildFailure("Failed: " + adbCallable);
+        ex.printStackTrace(console.get().getStdErr());
+      }
       return false;
     } catch (InterruptedException e) {
       try {
@@ -337,14 +354,16 @@ public class AdbHelper {
     }
     int failureCount = results.size() - successCount;
 
-    // Report results.
-    if (successCount > 0) {
-      console.printSuccess(
-          String.format("Successfully ran %s on %d device(s)", adbCallable, successCount));
-    }
-    if (failureCount > 0) {
-      console.printBuildFailure(
-          String.format("Failed to %s on %d device(s).", adbCallable, failureCount));
+    if (console.isPresent()) {
+      // Report results.
+      if (successCount > 0) {
+        console.get().printSuccess(
+            String.format("Successfully ran %s on %d device(s)", adbCallable, successCount));
+      }
+      if (failureCount > 0) {
+        console.get().printBuildFailure(
+            String.format("Failed to %s on %d device(s).", adbCallable, failureCount));
+      }
     }
 
     return failureCount == 0;
@@ -568,13 +587,18 @@ public class AdbHelper {
         reason = device.installPackage(apk.getAbsolutePath(), true);
       }
       if (reason != null) {
-        console.printBuildFailure(String.format("Failed to install apk on %s: %s.", name, reason));
+        if (console.isPresent()) {
+          console.get().printBuildFailure(
+              String.format("Failed to install apk on %s: %s.", name, reason));
+        }
         return false;
       }
       return true;
     } catch (InstallException ex) {
-      console.printBuildFailure(String.format("Failed to install apk on %s.", name));
-      ex.printStackTrace(console.getStdErr());
+      if (console.isPresent()) {
+        console.get().printBuildFailure(String.format("Failed to install apk on %s.", name));
+        ex.printStackTrace(console.get().getStdErr());
+      }
       return false;
     }
   }
@@ -635,12 +659,15 @@ public class AdbHelper {
             ShellCommandUnresponsiveException |
             TimeoutException |
             IOException e) {
-      console.printBuildFailure(String.format("Failed to test /data/local/tmp on %s.", name));
-      e.printStackTrace(console.getStdErr());
+      if (console.isPresent()) {
+        console.get().printBuildFailure(
+            String.format("Failed to test /data/local/tmp on %s.", name));
+        e.printStackTrace(console.get().getStdErr());
+      }
       return false;
     }
     String logMessage = loggingInfo.toString();
-    if (!logMessage.isEmpty()) {
+    if (!logMessage.isEmpty() && console.isPresent()) {
       StringBuilder fullMessage = new StringBuilder();
       fullMessage.append("============================================================\n");
       fullMessage.append('\n');
@@ -650,7 +677,7 @@ public class AdbHelper {
       fullMessage.append("Here's some extra info:\n");
       fullMessage.append(logMessage);
       fullMessage.append("============================================================\n");
-      console.getStdErr().println(fullMessage.toString());
+      console.get().getStdErr().println(fullMessage.toString());
     }
 
     return true;
@@ -713,10 +740,14 @@ public class AdbHelper {
 
       // Sanity check.
       if (launcherActivities.isEmpty()) {
-        console.printBuildFailure("No launchable activities found.");
+        if (console.isPresent()) {
+          console.get().printBuildFailure("No launchable activities found.");
+        }
         return 1;
       } else if (launcherActivities.size() > 1) {
-        console.printBuildFailure("Default activity is ambiguous.");
+        if (console.isPresent()) {
+          console.get().printBuildFailure("Default activity is ambiguous.");
+        }
         return 1;
       }
 
@@ -729,8 +760,10 @@ public class AdbHelper {
 
     final String activityToRun = activity;
 
-    PrintStream stdOut = console.getStdOut();
-    stdOut.println(String.format("Starting activity %s...", activityToRun));
+    if (console.isPresent()) {
+      PrintStream stdOut = console.get().getStdOut();
+      stdOut.println(String.format("Starting activity %s...", activityToRun));
+    }
 
     postEvent(StartActivityEvent.started(installableApk.getBuildTarget(),
         activityToRun));
@@ -740,7 +773,7 @@ public class AdbHelper {
           public boolean call(IDevice device) throws Exception {
             String err = deviceStartActivity(device, activityToRun);
             if (err != null) {
-              console.printBuildFailure(err);
+              console.get().printBuildFailure(err);
               return false;
             } else {
               return true;
@@ -832,26 +865,33 @@ public class AdbHelper {
       }
     }
 
-    PrintStream stdOut = console.getStdOut();
-    stdOut.printf("Removing apk from %s.\n", name);
+    PrintStream stdOut = null;
+    if (console.isPresent()) {
+      stdOut = console.get().getStdOut();
+      stdOut.printf("Removing apk from %s.\n", name);
+    }
     try {
       long start = System.currentTimeMillis();
       String reason = deviceUninstallPackage(device, packageName, keepData);
       long end = System.currentTimeMillis();
 
       if (reason != null) {
-        console.printBuildFailure(
+        console.get().printBuildFailure(
             String.format("Failed to uninstall apk from %s: %s.", name, reason));
         return false;
       }
 
       long delta = end - start;
-      stdOut.printf("Uninstalled apk from %s in %d.%03ds.\n", name, delta / 1000, delta % 1000);
+      if (stdOut != null) {
+        stdOut.printf("Uninstalled apk from %s in %d.%03ds.\n", name, delta / 1000, delta % 1000);
+      }
       return true;
 
     } catch (InstallException ex) {
-      console.printBuildFailure(String.format("Failed to uninstall apk from %s.", name));
-      ex.printStackTrace(console.getStdErr());
+      if (console.isPresent()) {
+        console.get().printBuildFailure(String.format("Failed to uninstall apk from %s.", name));
+        ex.printStackTrace(console.get().getStdErr());
+      }
       return false;
     }
   }

@@ -152,7 +152,7 @@ public class UninstallCommand extends AbstractCommand {
           adbOptions(),
           targetDeviceOptions(),
           context,
-          params.getConsole(),
+          Optional.of(params.getConsole()),
           Optional.of(params.getBuckEventBus()),
           params.getBuckConfig().getRestartAdbOnFailure());
 

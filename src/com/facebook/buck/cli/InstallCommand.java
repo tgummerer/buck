@@ -215,7 +215,7 @@ public class InstallCommand extends BuildCommand {
         adbOptions(),
         targetDeviceOptions(),
         executionContext,
-        params.getConsole(),
+        Optional.of(params.getConsole()),
         Optional.of(params.getBuckEventBus()),
         params.getBuckConfig().getRestartAdbOnFailure());
 

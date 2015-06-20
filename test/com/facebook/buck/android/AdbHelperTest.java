@@ -103,7 +103,7 @@ public class AdbHelperTest {
         adbOptions,
         targetDeviceOptions,
         executionContext,
-        console,
+        Optional.of(console),
         Optional.of(eventBus),
         true) {
       @Override
