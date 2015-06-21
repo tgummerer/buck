@@ -248,7 +248,6 @@ public class AdbHelper {
     return isAdbInitialized(adb) ? adb : null;
   }
 
-  @Nullable
   public List<IDevice> getDevices() throws InterruptedException {
     // Initialize adb connection.
     AndroidDebugBridge adb = createAdb(context);
@@ -256,7 +255,7 @@ public class AdbHelper {
       if (console.isPresent()) {
         console.get().printBuildFailure("Failed to create adb connection.");
       }
-      return null;
+      return Lists.newArrayList();
     }
 
     // Build list of matching devices.
@@ -267,6 +266,9 @@ public class AdbHelper {
       }
       adb.restart();
       devices = filterDevices(adb.getDevices());
+    }
+    if (devices == null) {
+      return Lists.newArrayList();
     }
     return devices;
   }
